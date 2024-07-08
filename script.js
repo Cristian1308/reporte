@@ -54,18 +54,21 @@ function compareImages(img1Src, img2) {
         cv.cvtColor(mat1, gray1, cv.COLOR_RGBA2GRAY);
         cv.cvtColor(mat2, gray2, cv.COLOR_RGBA2GRAY);
 
+        // Crear MatVector y añadir el canal
+        let channels1 = new cv.MatVector();
+        let channels2 = new cv.MatVector();
+        channels1.push_back(gray1);
+        channels2.push_back(gray2);
+
         // Calcular el histograma de ambas imágenes
         let hist1 = new cv.Mat();
         let hist2 = new cv.Mat();
         let mask = new cv.Mat();
-        let channels = new cv.MatVector();
-        channels.push_back(new cv.Mat());
-
         let histSize = [256];
         let ranges = [0, 255];
 
-        cv.calcHist(gray1, channels, mask, hist1, histSize, ranges);
-        cv.calcHist(gray2, channels, mask, hist2, histSize, ranges);
+        cv.calcHist(channels1, [0], mask, hist1, histSize, ranges);
+        cv.calcHist(channels2, [0], mask, hist2, histSize, ranges);
 
         // Normalizar los histogramas
         cv.normalize(hist1, hist1, 0, 1, cv.NORM_MINMAX);
@@ -92,7 +95,8 @@ function compareImages(img1Src, img2) {
         hist1.delete();
         hist2.delete();
         mask.delete();
-        channels.delete();
+        channels1.delete();
+        channels2.delete();
     };
     img1.onerror = () => {
         console.error("Error al cargar la imagen capturada");
