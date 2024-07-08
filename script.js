@@ -54,7 +54,7 @@ function compareImages(img1Src, img2) {
         cv.cvtColor(mat1, gray1, cv.COLOR_RGBA2GRAY);
         cv.cvtColor(mat2, gray2, cv.COLOR_RGBA2GRAY);
 
-        // Crear MatVector y añadir el canal
+        // Crear MatVector para los canales
         let channels1 = new cv.MatVector();
         let channels2 = new cv.MatVector();
         channels1.push_back(gray1);
@@ -65,7 +65,7 @@ function compareImages(img1Src, img2) {
         let hist2 = new cv.Mat();
         let mask = new cv.Mat();
         let histSize = [256];
-        let ranges = [0, 255];
+        let ranges = [0, 256];
 
         cv.calcHist(channels1, [0], mask, hist1, histSize, ranges);
         cv.calcHist(channels2, [0], mask, hist2, histSize, ranges);
@@ -111,4 +111,3 @@ captureButton.addEventListener('click', () => {
         compareImages(capturedImage, referenceImg);
     });
 });
-
