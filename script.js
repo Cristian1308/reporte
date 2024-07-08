@@ -19,13 +19,21 @@ function loadReferenceImage(callback) {
     const img = new Image();
     img.src = referenceImage.src;
     img.crossOrigin = "anonymous"; // Asegurar el acceso CORS
-    img.onload = () => callback(img);
+    img.onload = () => {
+        console.log("Imagen de referencia cargada");
+        callback(img);
+    };
+    img.onerror = () => {
+        console.error("Error al cargar la imagen de referencia");
+    };
 }
 
 // Función para capturar la imagen de la cámara
 function captureImage() {
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/png');
+    const dataURL = canvas.toDataURL('image/png');
+    console.log("Imagen capturada:", dataURL);
+    return dataURL;
 }
 
 // Función para comparar las imágenes píxel por píxel usando Canvas
@@ -33,6 +41,7 @@ function compareImages(img1Src, img2) {
     const img1 = new Image();
     img1.src = img1Src;
     img1.onload = () => {
+        console.log("Imagen capturada cargada");
         const tempCanvas1 = document.createElement('canvas');
         const tempContext1 = tempCanvas1.getContext('2d');
         tempCanvas1.width = img1.width;
@@ -63,6 +72,9 @@ function compareImages(img1Src, img2) {
         } else {
             alert("Las imágenes no son similares.");
         }
+    };
+    img1.onerror = () => {
+        console.error("Error al cargar la imagen capturada");
     };
 }
 
