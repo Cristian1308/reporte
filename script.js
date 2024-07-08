@@ -3,6 +3,8 @@ const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const captureButton = document.getElementById('capture');
 const referenceImage = document.getElementById('reference');
+const overlayCanvas = document.getElementById('overlay');
+const overlayContext = overlayCanvas.getContext('2d');
 const context = canvas.getContext('2d');
 
 // Activar la cámara
@@ -14,6 +16,32 @@ navigator.mediaDevices.getUserMedia({ video: true })
     .catch((err) => {
         console.error("Error al acceder a la cámara: ", err);
     });
+
+// Dibujar un óvalo en la imagen de referencia
+referenceImage.onload = () => {
+    const referenceCanvas = document.createElement('canvas');
+    const referenceContext = referenceCanvas.getContext('2d');
+    referenceCanvas.width = referenceImage.width;
+    referenceCanvas.height = referenceImage.height;
+    referenceContext.drawImage(referenceImage, 0, 0);
+    referenceContext.strokeStyle = 'red';
+    referenceContext.lineWidth = 3;
+    referenceContext.beginPath();
+    referenceContext.ellipse(referenceCanvas.width / 2, referenceCanvas.height / 2, 150, 200, 0, 0, 2 * Math.PI);
+    referenceContext.stroke();
+    referenceImage.src = referenceCanvas.toDataURL();
+};
+
+// Dibujar un óvalo en la vista de la cámara
+video.addEventListener('play', () => {
+    overlayCanvas.width = video.videoWidth;
+    overlayCanvas.height = video.videoHeight;
+    overlayContext.strokeStyle = 'red';
+    overlayContext.lineWidth = 3;
+    overlayContext.beginPath();
+    overlayContext.ellipse(overlayCanvas.width / 2, overlayCanvas.height / 2, 150, 200, 0, 0, 2 * Math.PI);
+    overlayContext.stroke();
+});
 
 // Función para cargar la imagen de referencia
 function loadReferenceImage(callback) {
@@ -111,3 +139,4 @@ captureButton.addEventListener('click', () => {
         compareImages(capturedImage, referenceImg);
     });
 });
+
