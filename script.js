@@ -35,7 +35,7 @@ function sumMatrix(matrix) {
     let sum = 0;
     for (let i = 0; i < matrix.rows; i++) {
         for (let j = 0; j < matrix.cols; j++) {
-            sum += matrix.ucharPtr(i, j)[0]; // Sumando solo el primer canal (asumiendo que es una imagen en escala de grises)
+            sum += matrix.ucharPtr(i, j).reduce((a, b) => a + b, 0);
         }
     }
     return sum;
@@ -78,4 +78,3 @@ function compareImages(img1Src, img2Src) {
         });
     });
 }
-
