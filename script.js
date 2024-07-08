@@ -97,7 +97,7 @@ function compareImages(img1Src, img2) {
 
         console.log("Correlación:", correlation);
 
-        const similarityThreshold = 0.9; // Ajusta este umbral según sea necesario
+        const similarityThreshold = 0.8; // Umbral del 80%
 
         if (correlation > similarityThreshold) {
             alert("Las imágenes son similares.");
@@ -129,4 +129,3 @@ captureButton.addEventListener('click', () => {
         compareImages(capturedImage, referenceImg);
     });
 });
-
