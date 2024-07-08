@@ -4,15 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Comparar Imágenes</title>
+    <style>
+        #camera-container {
+            position: relative;
+            width: 640px;
+            height: 480px;
+        }
+        #video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 640px;
+            height: 480px;
+        }
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 640px;
+            height: 480px;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
     <h1>Comparar Imágenes</h1>
-    <div>
-        <video id="video" width="640" height="480" autoplay></video>
-        <button id="capture">Tomar Foto</button>
-        <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
-        <img id="reference" src="reference-image.png" style="display:none;">
+    <div id="camera-container">
+        <video id="video" autoplay></video>
+        <canvas id="overlay"></canvas>
     </div>
+    <button id="capture">Tomar Foto</button>
+    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+    <img id="reference" src="reference-image.png" style="display:none;">
     <script async src="https://docs.opencv.org/master/opencv.js"></script>
     <script src="script.js"></script>
 </body>
