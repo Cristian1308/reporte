@@ -30,6 +30,17 @@ function loadImage(src, callback) {
     img.src = src;
 }
 
+// Función para calcular la suma de los elementos en una matriz
+function sumMatrix(matrix) {
+    let sum = 0;
+    for (let i = 0; i < matrix.rows; i++) {
+        for (let j = 0; j < matrix.cols; j++) {
+            sum += matrix.ucharPtr(i, j)[0]; // Sumando solo el primer canal (asumiendo que es una imagen en escala de grises)
+        }
+    }
+    return sum;
+}
+
 // Función para comparar las imágenes usando OpenCV.js
 function compareImages(img1Src, img2Src) {
     loadImage(img1Src, (img1) => {
@@ -46,10 +57,10 @@ function compareImages(img1Src, img2Src) {
             cv.absdiff(mat1, mat2, diff);
 
             // Calcular la suma de diferencias
-            let diffSum = cv.sumElems(diff);
+            let diffSum = sumMatrix(diff);
             let similarityThreshold = 1000000; // Establecer un umbral adecuado
 
-            if (diffSum[0] < similarityThreshold) {
+            if (diffSum < similarityThreshold) {
                 alert("Las imágenes son similares.");
             } else {
                 alert("Las imágenes no son similares.");
@@ -67,3 +78,4 @@ function compareImages(img1Src, img2Src) {
         });
     });
 }
+
