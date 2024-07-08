@@ -9,6 +9,7 @@ const context = canvas.getContext('2d');
 navigator.mediaDevices.getUserMedia({ video: true })
     .then((stream) => {
         video.srcObject = stream;
+        console.log("Cámara activada");
     })
     .catch((err) => {
         console.error("Error al acceder a la cámara: ", err);
@@ -36,42 +37,59 @@ function captureImage() {
     return dataURL;
 }
 
-// Función para comparar las imágenes píxel por píxel usando Canvas
+// Función para comparar las imágenes usando OpenCV.js
 function compareImages(img1Src, img2) {
     const img1 = new Image();
     img1.src = img1Src;
     img1.onload = () => {
         console.log("Imagen capturada cargada");
-        const tempCanvas1 = document.createElement('canvas');
-        const tempContext1 = tempCanvas1.getContext('2d');
-        tempCanvas1.width = img1.width;
-        tempCanvas1.height = img1.height;
-        tempContext1.drawImage(img1, 0, 0);
 
-        const tempCanvas2 = document.createElement('canvas');
-        const tempContext2 = tempCanvas2.getContext('2d');
-        tempCanvas2.width = img2.width;
-        tempCanvas2.height = img2.height;
-        tempContext2.drawImage(img2, 0, 0);
+        // Crear matrices de OpenCV
+        let mat1 = cv.imread(img1);
+        let mat2 = cv.imread(img2);
 
-        const imgData1 = tempContext1.getImageData(0, 0, tempCanvas1.width, tempCanvas1.height).data;
-        const imgData2 = tempContext2.getImageData(0, 0, tempCanvas2.width, tempCanvas2.height).data;
+        // Convertir a escala de grises
+        let gray1 = new cv.Mat();
+        let gray2 = new cv.Mat();
+        cv.cvtColor(mat1, gray1, cv.COLOR_RGBA2GRAY);
+        cv.cvtColor(mat2, gray2, cv.COLOR_RGBA2GRAY);
 
-        let diff = 0;
-        for (let i = 0; i < imgData1.length; i += 4) {
-            const rDiff = Math.abs(imgData1[i] - imgData2[i]);
-            const gDiff = Math.abs(imgData1[i + 1] - imgData2[i + 1]);
-            const bDiff = Math.abs(imgData1[i + 2] - imgData2[i + 2]);
-            diff += rDiff + gDiff + bDiff;
-        }
+        // Calcular el histograma de ambas imágenes
+        let hist1 = new cv.Mat();
+        let hist2 = new cv.Mat();
+        let mask = new cv.Mat();
+        let channels = [0];
+        let histSize = [256];
+        let ranges = [0, 255];
 
-        const similarityThreshold = 1000000; // Ajusta este umbral según sea necesario
+        cv.calcHist(gray1, channels, mask, hist1, histSize, ranges);
+        cv.calcHist(gray2, channels, mask, hist2, histSize, ranges);
 
-        if (diff < similarityThreshold) {
+        // Normalizar los histogramas
+        cv.normalize(hist1, hist1, 0, 1, cv.NORM_MINMAX);
+        cv.normalize(hist2, hist2, 0, 1, cv.NORM_MINMAX);
+
+        // Calcular la correlación entre los histogramas
+        let correlation = cv.compareHist(hist1, hist2, cv.HISTCMP_CORREL);
+
+        console.log("Correlación:", correlation);
+
+        const similarityThreshold = 0.9; // Ajusta este umbral según sea necesario
+
+        if (correlation > similarityThreshold) {
             alert("Las imágenes son similares.");
         } else {
             alert("Las imágenes no son similares.");
         }
+
+        // Liberar recursos
+        mat1.delete();
+        mat2.delete();
+        gray1.delete();
+        gray2.delete();
+        hist1.delete();
+        hist2.delete();
+        mask.delete();
     };
     img1.onerror = () => {
         console.error("Error al cargar la imagen capturada");
@@ -80,6 +98,7 @@ function compareImages(img1Src, img2) {
 
 // Capturar y comparar la imagen cuando se hace clic en el botón
 captureButton.addEventListener('click', () => {
+    console.log("Botón de captura presionado");
     const capturedImage = captureImage();
     loadReferenceImage((referenceImg) => {
         compareImages(capturedImage, referenceImg);
