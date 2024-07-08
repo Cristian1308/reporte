@@ -58,7 +58,9 @@ function compareImages(img1Src, img2) {
         let hist1 = new cv.Mat();
         let hist2 = new cv.Mat();
         let mask = new cv.Mat();
-        let channels = [0];
+        let channels = new cv.MatVector();
+        channels.push_back(new cv.Mat());
+
         let histSize = [256];
         let ranges = [0, 255];
 
@@ -90,6 +92,7 @@ function compareImages(img1Src, img2) {
         hist1.delete();
         hist2.delete();
         mask.delete();
+        channels.delete();
     };
     img1.onerror = () => {
         console.error("Error al cargar la imagen capturada");
@@ -104,3 +107,4 @@ captureButton.addEventListener('click', () => {
         compareImages(capturedImage, referenceImg);
     });
 });
+
