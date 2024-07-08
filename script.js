@@ -19,7 +19,7 @@ captureButton.addEventListener('click', () => {
     const capturedImage = canvas.toDataURL('image/png');
 
     // Aquí puedes comparar la imagen capturada con una imagen de referencia
-    compareImages(capturedImage, '/reference.jpg');
+    compareImages(capturedImage, 'reference.jpg');
 });
 
 // Función para cargar la imagen de una URL en un elemento HTML
@@ -30,51 +30,40 @@ function loadImage(src, callback) {
     img.src = src;
 }
 
-// Función para calcular la suma de los elementos en una matriz
-function sumMatrix(matrix) {
-    let sum = 0;
-    for (let i = 0; i < matrix.rows; i++) {
-        for (let j = 0; j < matrix.cols; j++) {
-            sum += matrix.ucharPtr(i, j).reduce((a, b) => a + b, 0);
-        }
-    }
-    return sum;
-}
-
-// Función para comparar las imágenes usando OpenCV.js
+// Función para comparar las imágenes píxel por píxel usando Canvas
 function compareImages(img1Src, img2Src) {
     loadImage(img1Src, (img1) => {
         loadImage(img2Src, (img2) => {
-            let mat1 = cv.imread(img1);
-            let mat2 = cv.imread(img2);
+            const tempCanvas1 = document.createElement('canvas');
+            const tempContext1 = tempCanvas1.getContext('2d');
+            tempCanvas1.width = img1.width;
+            tempCanvas1.height = img1.height;
+            tempContext1.drawImage(img1, 0, 0);
 
-            // Cambiar el tamaño de las imágenes para que coincidan, si es necesario
-            let size = new cv.Size(640, 480);
-            cv.resize(mat1, mat1, size);
-            cv.resize(mat2, mat2, size);
+            const tempCanvas2 = document.createElement('canvas');
+            const tempContext2 = tempCanvas2.getContext('2d');
+            tempCanvas2.width = img2.width;
+            tempCanvas2.height = img2.height;
+            tempContext2.drawImage(img2, 0, 0);
 
-            let diff = new cv.Mat();
-            cv.absdiff(mat1, mat2, diff);
+            const imgData1 = tempContext1.getImageData(0, 0, img1.width, img1.height).data;
+            const imgData2 = tempContext2.getImageData(0, 0, img2.width, img2.height).data;
 
-            // Calcular la suma de diferencias
-            let diffSum = sumMatrix(diff);
-            let similarityThreshold = 1000000; // Establecer un umbral adecuado
+            let diff = 0;
+            for (let i = 0; i < imgData1.length; i += 4) {
+                const rDiff = Math.abs(imgData1[i] - imgData2[i]);
+                const gDiff = Math.abs(imgData1[i + 1] - imgData2[i + 1]);
+                const bDiff = Math.abs(imgData1[i + 2] - imgData2[i + 2]);
+                diff += rDiff + gDiff + bDiff;
+            }
 
-            if (diffSum < similarityThreshold) {
+            const similarityThreshold = 1000000; // Ajusta este umbral según sea necesario
+
+            if (diff < similarityThreshold) {
                 alert("Las imágenes son similares.");
             } else {
                 alert("Las imágenes no son similares.");
             }
-
-            // Mostrar la diferencia en el canvas
-            let result = new cv.Mat();
-            cv.threshold(diff, result, 127, 255, cv.THRESH_BINARY);
-            cv.imshow('canvas', result);
-
-            mat1.delete();
-            mat2.delete();
-            diff.delete();
-            result.delete();
         });
     });
 }
