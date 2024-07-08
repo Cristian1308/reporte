@@ -19,7 +19,7 @@ captureButton.addEventListener('click', () => {
     const capturedImage = canvas.toDataURL('image/png');
 
     // Aquí puedes comparar la imagen capturada con una imagen de referencia
-    compareImages(capturedImage, 'reference.jpeg');
+    compareImages(capturedImage, 'reference.jpg');
 });
 
 // Función para comparar las imágenes usando OpenCV.js
