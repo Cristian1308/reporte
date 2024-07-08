@@ -2,25 +2,35 @@
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const captureButton = document.getElementById('capture');
-const referenceImage = document.getElementById('reference');
+const referenceImage1 = document.getElementById('reference1');
+const referenceImage2 = document.getElementById('reference2');
 const overlayCanvas = document.getElementById('overlay');
 const overlayContext = overlayCanvas.getContext('2d');
 const context = canvas.getContext('2d');
 
-// Activar la cámara
-navigator.mediaDevices.getUserMedia({ video: true })
-    .then((stream) => {
-        video.srcObject = stream;
-        console.log("Cámara activada");
+// Cargar los modelos de face-api.js
+Promise.all([
+    faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+    faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+    faceapi.nets.faceRecognitionNet.loadFromUri('/models')
+]).then(startVideo);
 
-        // Esperar a que el video esté listo antes de dibujar el óvalo
-        video.addEventListener('loadeddata', () => {
-            drawOverlay();
+// Activar la cámara
+function startVideo() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then((stream) => {
+            video.srcObject = stream;
+            console.log("Cámara activada");
+
+            // Esperar a que el video esté listo antes de dibujar el óvalo
+            video.addEventListener('loadeddata', () => {
+                drawOverlay();
+            });
+        })
+        .catch((err) => {
+            console.error("Error al acceder a la cámara: ", err);
         });
-    })
-    .catch((err) => {
-        console.error("Error al acceder a la cámara: ", err);
-    });
+}
 
 // Dibujar un óvalo en la vista de la cámara
 function drawOverlay() {
@@ -33,18 +43,15 @@ function drawOverlay() {
     overlayContext.stroke();
 }
 
-// Función para cargar la imagen de referencia
-function loadReferenceImage(callback) {
-    const img = new Image();
-    img.src = referenceImage.src;
-    img.crossOrigin = "anonymous"; // Asegurar el acceso CORS
-    img.onload = () => {
-        console.log("Imagen de referencia cargada");
-        callback(img);
-    };
-    img.onerror = () => {
-        console.error("Error al cargar la imagen de referencia");
-    };
+// Función para cargar una imagen de referencia y detectar el rostro
+async function loadReferenceImage(imgElement) {
+    const img = await faceapi.fetchImage(imgElement.src);
+    const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+    if (!detections) {
+        console.error("No se detectó ningún rostro en la imagen de referencia");
+        return null;
+    }
+    return detections.descriptor;
 }
 
 // Función para capturar la imagen de la cámara
@@ -55,77 +62,42 @@ function captureImage() {
     return dataURL;
 }
 
-// Función para comparar las imágenes usando OpenCV.js
-function compareImages(img1Src, img2) {
-    const img1 = new Image();
-    img1.src = img1Src;
-    img1.onload = () => {
-        console.log("Imagen capturada cargada");
+// Función para detectar el rostro en la imagen capturada y compararlo con las referencias
+async function compareImages(capturedImageSrc) {
+    const referenceDescriptor1 = await loadReferenceImage(referenceImage1);
+    const referenceDescriptor2 = await loadReferenceImage(referenceImage2);
+    
+    if (!referenceDescriptor1 || !referenceDescriptor2) {
+        alert("No se pudo cargar una o ambas imágenes de referencia");
+        return;
+    }
 
-        // Crear matrices de OpenCV
-        let mat1 = cv.imread(img1);
-        let mat2 = cv.imread(img2);
+    const img = await faceapi.fetchImage(capturedImageSrc);
+    const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+    if (!detections) {
+        alert("No se detectó ningún rostro en la imagen capturada");
+        return;
+    }
 
-        // Convertir a escala de grises
-        let gray1 = new cv.Mat();
-        let gray2 = new cv.Mat();
-        cv.cvtColor(mat1, gray1, cv.COLOR_RGBA2GRAY);
-        cv.cvtColor(mat2, gray2, cv.COLOR_RGBA2GRAY);
+    const distance1 = faceapi.euclideanDistance(referenceDescriptor1, detections.descriptor);
+    const distance2 = faceapi.euclideanDistance(referenceDescriptor2, detections.descriptor);
+    console.log("Distancia Euclidiana a Cristian:", distance1);
+    console.log("Distancia Euclidiana a Sergio:", distance2);
 
-        // Crear MatVector para los canales
-        let channels1 = new cv.MatVector();
-        let channels2 = new cv.MatVector();
-        channels1.push_back(gray1);
-        channels2.push_back(gray2);
+    const similarityThreshold = 0.6; // Umbral para determinar si las imágenes son similares
 
-        // Calcular el histograma de ambas imágenes
-        let hist1 = new cv.Mat();
-        let hist2 = new cv.Mat();
-        let mask = new cv.Mat();
-        let histSize = [256];
-        let ranges = [0, 256];
-
-        cv.calcHist(channels1, [0], mask, hist1, histSize, ranges);
-        cv.calcHist(channels2, [0], mask, hist2, histSize, ranges);
-
-        // Normalizar los histogramas
-        cv.normalize(hist1, hist1, 0, 1, cv.NORM_MINMAX);
-        cv.normalize(hist2, hist2, 0, 1, cv.NORM_MINMAX);
-
-        // Calcular la correlación entre los histogramas
-        let correlation = cv.compareHist(hist1, hist2, cv.HISTCMP_CORREL);
-
-        console.log("Correlación:", correlation);
-
-        const similarityThreshold = 0.8; // Umbral del 80%
-
-        if (correlation > similarityThreshold) {
-            alert("Las imágenes son similares.");
-        } else {
-            alert("Las imágenes no son similares.");
-        }
-
-        // Liberar recursos
-        mat1.delete();
-        mat2.delete();
-        gray1.delete();
-        gray2.delete();
-        hist1.delete();
-        hist2.delete();
-        mask.delete();
-        channels1.delete();
-        channels2.delete();
-    };
-    img1.onerror = () => {
-        console.error("Error al cargar la imagen capturada");
-    };
+    if (distance1 < similarityThreshold) {
+        alert("Bienvenido Cristian");
+    } else if (distance2 < similarityThreshold) {
+        alert("Bienvenido Sergio");
+    } else {
+        alert("Las imágenes no son similares a ninguna referencia.");
+    }
 }
 
 // Capturar y comparar la imagen cuando se hace clic en el botón
 captureButton.addEventListener('click', () => {
     console.log("Botón de captura presionado");
     const capturedImage = captureImage();
-    loadReferenceImage((referenceImg) => {
-        compareImages(capturedImage, referenceImg);
-    });
+    compareImages(capturedImage);
 });
