@@ -12,7 +12,11 @@ navigator.mediaDevices.getUserMedia({ video: true })
     .then((stream) => {
         video.srcObject = stream;
         console.log("Cámara activada");
-        drawOverlay();
+
+        // Esperar a que el video esté listo antes de dibujar el óvalo
+        video.addEventListener('loadeddata', () => {
+            drawOverlay();
+        });
     })
     .catch((err) => {
         console.error("Error al acceder a la cámara: ", err);
@@ -125,3 +129,4 @@ captureButton.addEventListener('click', () => {
         compareImages(capturedImage, referenceImg);
     });
 });
+
